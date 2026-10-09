@@ -162,3 +162,70 @@ button {
 }
 
 #clear-done:hover { color: var(--text); }
+
+/* ---------- Sync panel ---------- */
+.sync {
+  margin-top: 32px;
+  padding: 12px 14px;
+  background: var(--card);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.sync summary {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+
+.sync summary::-webkit-details-marker { display: none; }
+
+#sync-status {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+#sync-status.error { color: #e5484d; }
+
+.sync p {
+  margin: 12px 0;
+  color: var(--muted);
+}
+
+.sync a { color: var(--accent); }
+
+.sync .row {
+  display: flex;
+  gap: 8px;
+}
+
+.sync input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+}
+
+.sync input:focus { border-color: var(--accent); }
+
+.sync button {
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 8px;
+}
+
+.sync button.secondary {
+  color: var(--text);
+  background: var(--bg);
+}
+
+[hidden] { display: none !important; }
