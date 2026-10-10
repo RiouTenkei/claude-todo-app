@@ -31,7 +31,7 @@ body {
 .app {
   max-width: 520px;
   margin: 0 auto;
-  padding: 48px 16px;
+  padding: calc(48px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom));
 }
 
 h1 {
