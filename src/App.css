@@ -40,12 +40,12 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-#new-todo {
+.new-todo {
   display: flex;
   gap: 8px;
 }
 
-#todo-input {
+.new-todo input {
   flex: 1;
   padding: 12px 14px;
   font: inherit;
@@ -56,14 +56,14 @@ h1 {
   outline: none;
 }
 
-#todo-input:focus { border-color: var(--accent); }
+.new-todo input:focus { border-color: var(--accent); }
 
 button {
   font: inherit;
   cursor: pointer;
 }
 
-#new-todo button {
+.new-todo button {
   padding: 0 18px;
   color: #fff;
   background: var(--accent);
@@ -91,7 +91,7 @@ button {
   background: var(--card);
 }
 
-#todo-list {
+.todo-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -100,7 +100,7 @@ button {
   overflow: hidden;
 }
 
-#todo-list:empty::after {
+.todo-list:empty::after {
   content: "Nothing here yet.";
   display: block;
   padding: 20px;
@@ -155,13 +155,13 @@ button {
   color: var(--muted);
 }
 
-#clear-done {
+.clear-done {
   color: var(--muted);
   background: none;
   border: 0;
 }
 
-#clear-done:hover { color: var(--text); }
+.clear-done:hover { color: var(--text); }
 
 /* ---------- Sync panel ---------- */
 .sync {
@@ -182,12 +182,12 @@ button {
 
 .sync summary::-webkit-details-marker { display: none; }
 
-#sync-status {
+.sync-status {
   font-weight: 400;
   color: var(--muted);
 }
 
-#sync-status.error { color: #e5484d; }
+.sync-status.error { color: #e5484d; }
 
 .sync p {
   margin: 12px 0;

@@ -1,6 +1,6 @@
 # Todo
 
-A tiny todo app in plain HTML, CSS and JavaScript. No build step, no dependencies. Todos are saved in your browser's local storage.
+A small todo app built with React and Vite. Todos are saved in your browser's local storage, with optional sync across devices through a private GitHub gist.
 
 ## Features
 
@@ -10,13 +10,20 @@ A tiny todo app in plain HTML, CSS and JavaScript. No build step, no dependencie
 - Light and dark mode (follows your system)
 - Works on phone and desktop
 
+## Running locally
+
+```sh
+npm install
+npm run dev
+```
+
 ## Hosting on GitHub Pages
 
-1. Go to the repo's **Settings → Pages**.
-2. Under **Build and deployment**, set Source to **Deploy from a branch**.
-3. Pick the `main` branch and the `/ (root)` folder, then save.
+Every push to `main` builds the app and deploys it with GitHub Actions (`.github/workflows/deploy.yml`).
 
-After a minute the app will be live at `https://<username>.github.io/<repo-name>/`.
+One-time setup: in the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
+
+The app is then live at `https://<username>.github.io/<repo-name>/`.
 
 ## Syncing across devices
 

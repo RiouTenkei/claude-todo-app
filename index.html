@@ -4,58 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Todo</title>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app">
-    <h1>Todo</h1>
-
-    <form id="new-todo" autocomplete="off">
-      <input id="todo-input" type="text" placeholder="What needs doing?" aria-label="New todo" required>
-      <button type="submit">Add</button>
-    </form>
-
-    <div class="filters" role="tablist">
-      <button data-filter="all" class="active">All</button>
-      <button data-filter="active">Active</button>
-      <button data-filter="done">Done</button>
-    </div>
-
-    <ul id="todo-list"></ul>
-
-    <footer class="footer">
-      <span id="count"></span>
-      <button id="clear-done" type="button">Clear done</button>
-    </footer>
-
-    <details class="sync">
-      <summary>
-        <span>Sync</span>
-        <span id="sync-status">Not synced</span>
-      </summary>
-
-      <form id="sync-form" autocomplete="off">
-        <p>
-          Sync your list across devices using a private GitHub gist.
-          <a href="https://github.com/settings/tokens/new?scopes=gist&description=Todo%20app%20sync" target="_blank" rel="noopener">Create a token</a>
-          with only the <strong>gist</strong> scope, then paste it here on each device.
-        </p>
-        <div class="row">
-          <input id="token-input" type="password" placeholder="ghp_…" aria-label="GitHub token" required>
-          <button type="submit">Connect</button>
-        </div>
-      </form>
-
-      <div id="sync-connected" hidden>
-        <p>Connected. Your list is stored in a <a id="gist-link" href="https://gist.github.com" target="_blank" rel="noopener">private gist</a>.</p>
-        <div class="row">
-          <button id="sync-now" type="button">Sync now</button>
-          <button id="sync-disconnect" type="button" class="secondary">Disconnect</button>
-        </div>
-      </div>
-    </details>
-  </main>
-
-  <script src="app.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
