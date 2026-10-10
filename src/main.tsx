@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { registerServiceWorker } from "./pwa";
 import "./App.css";
 
 const root = document.getElementById("root");
@@ -12,9 +13,4 @@ createRoot(root).render(
   </StrictMode>
 );
 
-// Offline support (production builds only).
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  });
-}
+registerServiceWorker();

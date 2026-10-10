@@ -1,6 +1,16 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { KEYS, get, set, remove, loadData, saveData } from "./storage";
 import { useGistSync } from "./useGistSync";
+import {
+  applyUpdate,
+  notificationPermission,
+  notify,
+  readLaunchParams,
+  requestNotifications,
+  setBadge,
+  useUpdateAvailable,
+  type Permission,
+} from "./pwa";
 import type { Filter, SyncStatus, Todo, TodoData } from "./types";
 
 const FILTERS: { id: Filter; label: string }[] = [
@@ -13,18 +23,53 @@ function newId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
+function dueTime(todo: Todo): number | null {
+  if (!todo.due) return null;
+  const t = new Date(todo.due).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+function formatDue(due: string): string {
+  const d = new Date(due);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Current time, refreshed every 30 seconds (drives overdue styling and reminders). */
+function useNow(intervalMs = 30_000): number {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setNow(Date.now());
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [intervalMs]);
+  return now;
+}
+
 export default function App() {
   const [data, setData] = useState<TodoData>(loadData);
   const [filter, setFilter] = useState<Filter>("all");
   const [text, setText] = useState("");
+  const [due, setDue] = useState("");
   const [token, setToken] = useState<string | null>(() => get(KEYS.token));
+  const [permission, setPermission] = useState<Permission>(notificationPermission);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const now = useNow();
+  const updateReady = useUpdateAvailable();
 
   const { status, gistUrl, sync, schedulePush } = useGistSync({ data, setData, token });
-
-  // Mirror every change (local or from the gist) into localStorage.
-  useEffect(() => {
-    saveData(data);
-  }, [data]);
 
   // Apply a local edit, stamp the time, and queue a push to the gist.
   function edit(change: (todos: Todo[]) => Todo[]) {
@@ -32,33 +77,106 @@ export default function App() {
     schedulePush();
   }
 
+  // Mirror every change (local or from the gist) into localStorage.
+  useEffect(() => {
+    saveData(data);
+  }, [data]);
+
+  // Opened from the share sheet or the "Add todo" shortcut.
+  useEffect(() => {
+    const { shared, focus } = readLaunchParams();
+    if (shared) setText(shared);
+    if (focus) inputRef.current?.focus();
+  }, []);
+
+  const { todos } = data;
+  const left = todos.filter(t => !t.done).length;
+
+  // Unfinished count on the app icon.
+  useEffect(() => {
+    setBadge(left);
+  }, [left]);
+
+  // Show a reminder for anything that has come due.
+  useEffect(() => {
+    if (permission !== "granted") return;
+    const dueNow = todos.filter(t => {
+      const time = dueTime(t);
+      return time !== null && time <= now && !t.done && !t.notified;
+    });
+    if (dueNow.length === 0) return;
+
+    for (const t of dueNow) {
+      void notify(t.text, {
+        body: `Due ${formatDue(t.due ?? "")}`,
+        tag: t.id,
+        icon: "./icon-192.png",
+      });
+    }
+    const ids = new Set(dueNow.map(t => t.id));
+    edit(all => all.map(t => (ids.has(t.id) ? { ...t, notified: true } : t)));
+  }, [todos, now, permission]);
+
   function addTodo(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = text.trim();
     if (!value) return;
-    edit(todos => [...todos, { id: newId(), text: value, done: false }]);
+    const todo: Todo = { id: newId(), text: value, done: false };
+    if (due) todo.due = due;
+    edit(all => [...all, todo]);
     setText("");
+    setDue("");
   }
 
-  const { todos } = data;
   const visible = todos.filter(t =>
     filter === "all" ? true : filter === "done" ? t.done : !t.done
   );
-  const left = todos.filter(t => !t.done).length;
+  const hasDueDates = todos.some(t => t.due && !t.done);
 
   return (
     <main className="app">
+      {updateReady && (
+        <div className="banner" role="status">
+          <span>A new version is available.</span>
+          <button type="button" onClick={applyUpdate}>
+            Refresh
+          </button>
+        </div>
+      )}
+
       <h1>Todo</h1>
 
       <form className="new-todo" onSubmit={addTodo} autoComplete="off">
         <input
+          ref={inputRef}
+          className="new-todo-text"
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="What needs doing?"
           aria-label="New todo"
         />
+        <input
+          type="datetime-local"
+          className="new-todo-due"
+          value={due}
+          onChange={e => setDue(e.target.value)}
+          aria-label="Due date (optional)"
+        />
         <button type="submit">Add</button>
       </form>
+
+      {hasDueDates && permission === "default" && (
+        <button
+          type="button"
+          className="reminders-prompt"
+          onClick={() => void requestNotifications().then(setPermission)}
+        >
+          🔔 Turn on reminders for due todos
+        </button>
+      )}
+      {hasDueDates && permission === "denied" && (
+        <p className="hint">Reminders are blocked. Allow notifications for this site to get them.</p>
+      )}
 
       <div className="filters">
         {FILTERS.map(f => (
@@ -74,27 +192,39 @@ export default function App() {
       </div>
 
       <ul className="todo-list">
-        {visible.map(todo => (
-          <li key={todo.id} className={"todo" + (todo.done ? " done" : "")}>
-            <input
-              type="checkbox"
-              checked={todo.done}
-              aria-label="Mark done"
-              onChange={() =>
-                edit(all => all.map(t => (t.id === todo.id ? { ...t, done: !t.done } : t)))
-              }
-            />
-            <span className="text">{todo.text}</span>
-            <button
-              type="button"
-              className="delete"
-              aria-label="Delete"
-              onClick={() => edit(all => all.filter(t => t.id !== todo.id))}
-            >
-              ×
-            </button>
-          </li>
-        ))}
+        {visible.map(todo => {
+          const time = dueTime(todo);
+          const overdue = time !== null && time <= now && !todo.done;
+          return (
+            <li key={todo.id} className={"todo" + (todo.done ? " done" : "")}>
+              <input
+                type="checkbox"
+                checked={todo.done}
+                aria-label="Mark done"
+                onChange={() =>
+                  edit(all => all.map(t => (t.id === todo.id ? { ...t, done: !t.done } : t)))
+                }
+              />
+              <div className="body">
+                <span className="text">{todo.text}</span>
+                {todo.due && (
+                  <span className={"due" + (overdue ? " overdue" : "")}>
+                    {overdue ? "Overdue · " : ""}
+                    {formatDue(todo.due)}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="delete"
+                aria-label="Delete"
+                onClick={() => edit(all => all.filter(t => t.id !== todo.id))}
+              >
+                ×
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       <footer className="footer">
@@ -127,6 +257,8 @@ export default function App() {
           setToken(null);
         }}
       />
+
+      <p className="version">Build {__BUILD_ID__}</p>
     </main>
   );
 }

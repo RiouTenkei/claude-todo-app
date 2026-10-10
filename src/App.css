@@ -42,11 +42,13 @@ h1 {
 
 .new-todo {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .new-todo input {
   flex: 1;
+  min-width: 0;
   padding: 12px 14px;
   font: inherit;
   color: var(--text);
@@ -57,6 +59,14 @@ h1 {
 }
 
 .new-todo input:focus { border-color: var(--accent); }
+
+.new-todo .new-todo-text { flex-basis: 100%; }
+
+.new-todo .new-todo-due {
+  padding: 10px 12px;
+  color: var(--muted);
+  color-scheme: light dark;
+}
 
 button {
   font: inherit;
@@ -125,10 +135,24 @@ button {
   flex-shrink: 0;
 }
 
-.todo .text {
+.todo .body {
   flex: 1;
-  word-break: break-word;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
+
+.todo .text { word-break: break-word; }
+
+.todo .due {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.todo .due.overdue { color: #e5484d; }
+
+.todo.done .due { text-decoration: line-through; }
 
 .todo.done .text {
   color: var(--muted);
@@ -229,3 +253,52 @@ button {
 }
 
 [hidden] { display: none !important; }
+
+
+/* ---------- Update banner ---------- */
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 10px;
+}
+
+.banner button {
+  padding: 6px 12px;
+  color: var(--accent);
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ---------- Reminders ---------- */
+.reminders-prompt {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.version {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}

@@ -9,6 +9,11 @@ A small todo app built with React, TypeScript and Vite, installable as a PWA tha
 - Clear completed items
 - Light and dark mode (follows your system)
 - Works on phone and desktop
+- Optional due dates, with reminders while the app is open or in the background
+- Installable PWA that works offline, with an update prompt after each deploy
+- Share text or links into the app from other apps (Android)
+- Long-press the app icon for an "Add todo" shortcut
+- Unfinished count on the app icon, where supported
 
 ## Running locally
 
