@@ -1,22 +1,23 @@
-import { useEffect, useState } from "react";
-import { KEYS, get, set, remove, loadData, saveData } from "./storage.js";
-import { useGistSync } from "./useGistSync.js";
+import { useEffect, useState, type FormEvent } from "react";
+import { KEYS, get, set, remove, loadData, saveData } from "./storage";
+import { useGistSync } from "./useGistSync";
+import type { Filter, SyncStatus, Todo, TodoData } from "./types";
 
-const FILTERS = [
+const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "active", label: "Active" },
   { id: "done", label: "Done" },
 ];
 
-function newId() {
+function newId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 export default function App() {
-  const [data, setData] = useState(loadData);
-  const [filter, setFilter] = useState("all");
+  const [data, setData] = useState<TodoData>(loadData);
+  const [filter, setFilter] = useState<Filter>("all");
   const [text, setText] = useState("");
-  const [token, setToken] = useState(() => get(KEYS.token));
+  const [token, setToken] = useState<string | null>(() => get(KEYS.token));
 
   const { status, gistUrl, sync, schedulePush } = useGistSync({ data, setData, token });
 
@@ -26,12 +27,12 @@ export default function App() {
   }, [data]);
 
   // Apply a local edit, stamp the time, and queue a push to the gist.
-  function edit(change) {
+  function edit(change: (todos: Todo[]) => Todo[]) {
     setData(prev => ({ todos: change(prev.todos), updatedAt: Date.now() }));
     schedulePush();
   }
 
-  function addTodo(e) {
+  function addTodo(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = text.trim();
     if (!value) return;
@@ -63,6 +64,7 @@ export default function App() {
         {FILTERS.map(f => (
           <button
             key={f.id}
+            type="button"
             className={filter === f.id ? "active" : ""}
             onClick={() => setFilter(f.id)}
           >
@@ -96,9 +98,15 @@ export default function App() {
       </ul>
 
       <footer className="footer">
-        <span>{left} item{left === 1 ? "" : "s"} left</span>
+        <span>
+          {left} item{left === 1 ? "" : "s"} left
+        </span>
         {todos.some(t => t.done) && (
-          <button type="button" className="clear-done" onClick={() => edit(all => all.filter(t => !t.done))}>
+          <button
+            type="button"
+            className="clear-done"
+            onClick={() => edit(all => all.filter(t => !t.done))}
+          >
             Clear done
           </button>
         )}
@@ -112,7 +120,7 @@ export default function App() {
           set(KEYS.token, value);
           setToken(value);
         }}
-        onSyncNow={sync}
+        onSyncNow={() => void sync()}
         onDisconnect={() => {
           remove(KEYS.token);
           remove(KEYS.gistId);
@@ -123,8 +131,25 @@ export default function App() {
   );
 }
 
-function SyncPanel({ token, status, gistUrl, onConnect, onSyncNow, onDisconnect }) {
+interface SyncPanelProps {
+  token: string | null;
+  status: SyncStatus;
+  gistUrl: string;
+  onConnect: (token: string) => void;
+  onSyncNow: () => void;
+  onDisconnect: () => void;
+}
+
+function SyncPanel({ token, status, gistUrl, onConnect, onSyncNow, onDisconnect }: SyncPanelProps) {
   const [value, setValue] = useState("");
+
+  function connect(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const v = value.trim();
+    if (!v) return;
+    onConnect(v);
+    setValue("");
+  }
 
   return (
     <details className="sync">
@@ -137,24 +162,22 @@ function SyncPanel({ token, status, gistUrl, onConnect, onSyncNow, onDisconnect 
         <div>
           <p>
             Connected. Your list is stored in a{" "}
-            <a href={gistUrl} target="_blank" rel="noopener noreferrer">private gist</a>.
+            <a href={gistUrl} target="_blank" rel="noopener noreferrer">
+              private gist
+            </a>
+            .
           </p>
           <div className="row">
-            <button type="button" onClick={onSyncNow}>Sync now</button>
-            <button type="button" className="secondary" onClick={onDisconnect}>Disconnect</button>
+            <button type="button" onClick={onSyncNow}>
+              Sync now
+            </button>
+            <button type="button" className="secondary" onClick={onDisconnect}>
+              Disconnect
+            </button>
           </div>
         </div>
       ) : (
-        <form
-          autoComplete="off"
-          onSubmit={e => {
-            e.preventDefault();
-            const v = value.trim();
-            if (!v) return;
-            onConnect(v);
-            setValue("");
-          }}
-        >
+        <form autoComplete="off" onSubmit={connect}>
           <p>
             Sync your list across devices using a private GitHub gist.{" "}
             <a

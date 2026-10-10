@@ -1,16 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { findOrCreateGist, readGist, pushGist, errorMessage } from "./gist.js";
+import { findOrCreateGist, readGist, pushGist, errorMessage } from "./gist";
+import type { SyncStatus, TodoData } from "./types";
 
-// Keeps `data` ({ todos, updatedAt }) in sync with a private gist.
-// The newest updatedAt wins. Returns status info and a schedulePush() to
-// call after every local edit.
-export function useGistSync({ data, setData, token }) {
-  const [status, setStatus] = useState({ text: "Not synced", error: false });
+interface Options {
+  data: TodoData;
+  setData: (data: TodoData) => void;
+  token: string | null;
+}
+
+interface GistSync {
+  status: SyncStatus;
+  gistUrl: string;
+  sync: () => Promise<void>;
+  /** Call after every local edit. */
+  schedulePush: () => void;
+}
+
+/** Keeps `data` in sync with a private gist. The newest `updatedAt` wins. */
+export function useGistSync({ data, setData, token }: Options): GistSync {
+  const [status, setStatus] = useState<SyncStatus>({ text: "Not synced", error: false });
   const [gistUrl, setGistUrl] = useState("https://gist.github.com");
 
   const dataRef = useRef(data);
   dataRef.current = data;
-  const timer = useRef(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const syncing = useRef(false);
 
   const sync = useCallback(async () => {
@@ -42,13 +55,10 @@ export function useGistSync({ data, setData, token }) {
     if (!token) return;
     setStatus({ text: "Saving…", error: false });
     clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      try {
-        await pushGist(token, dataRef.current);
-        setStatus({ text: "Synced", error: false });
-      } catch (e) {
-        setStatus({ text: errorMessage(e), error: true });
-      }
+    timer.current = setTimeout(() => {
+      pushGist(token, dataRef.current)
+        .then(() => setStatus({ text: "Synced", error: false }))
+        .catch((e: unknown) => setStatus({ text: errorMessage(e), error: true }));
     }, 800);
   }, [token]);
 
@@ -58,15 +68,16 @@ export function useGistSync({ data, setData, token }) {
       setStatus({ text: "Not synced", error: false });
       return;
     }
-    sync();
+    void sync();
     const onVisible = () => {
-      if (document.visibilityState === "visible") sync();
+      if (document.visibilityState === "visible") void sync();
     };
+    const onOnline = () => void sync();
     document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("online", sync);
+    window.addEventListener("online", onOnline);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("online", sync);
+      window.removeEventListener("online", onOnline);
     };
   }, [token, sync]);
 

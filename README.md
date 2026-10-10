@@ -1,6 +1,6 @@
 # Todo
 
-A small todo app built with React and Vite. Todos are saved in your browser's local storage, with optional sync across devices through a private GitHub gist.
+A small todo app built with React, TypeScript and Vite, installable as a PWA that works offline. Todos are saved in your browser's local storage, with optional sync across devices through a private GitHub gist.
 
 ## Features
 
